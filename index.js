@@ -9,27 +9,27 @@ var gutil = require('gulp-util');
 var through = require('through2');
 
 module.exports = function(config) {
-  
+
   config = _.extend({
     region: 'us-east-1'
   }, config);
 
   function deploy(file, enc, callback) {
-    
+
     if (config.profile) {
       AWS.config.credentials = new AWS.SharedIniFileCredentials({ profile: config.profile });
       gutil.log('Using credentials from profile \'' + config.profile + '\'');
     }
 
-    var iam = new AWS.IAM();
+    var sts = new AWS.STS();
 
-    iam.getUser({}, function(err, data) {
+    sts.getCallerIdentity({}, function(err, data) {
 
       if (err) {
         callback(new gutil.PluginError('gulp-eb-deploy', err));
       } else {
 
-        git.short(function(rev) { 
+        git.short(function(rev) {
 
           var date = new Date();
           var y = date.getFullYear();
@@ -44,7 +44,7 @@ module.exports = function(config) {
 
           var label = config.application + '-' + config.environment + '-' + version;
 
-          var account = data.User.Arn.split(/:/)[4];
+          var account = data.Account;
           var bucket = 'elasticbeanstalk-' + config.region + '-' + account;
 
           var s3obj = new AWS.S3({ params: { Bucket: bucket, Key: label + '.zip' } });
